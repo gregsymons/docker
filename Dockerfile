@@ -3,11 +3,12 @@ FROM java:8u45-jdk
 RUN apt-get update && apt-get install -y wget git curl zip && rm -rf /var/lib/apt/lists/*
 
 ENV JENKINS_HOME /var/jenkins_home
+ENV JENKINS_UID 500
 
 # Jenkins is ran with user `jenkins`, uid = 500
 # If you bind mount a volume from host/vloume from a data container, 
 # ensure you use same uid
-RUN useradd -d "$JENKINS_HOME" -u 500 -m -s /bin/bash jenkins
+RUN useradd -d "$JENKINS_HOME" -u ${JENKINS_UID} -m -s /bin/bash jenkins
 
 # Jenkins home directoy is a volume, so configuration and build history 
 # can be persisted and survive image upgrades
