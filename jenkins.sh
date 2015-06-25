@@ -12,7 +12,8 @@ copy_reference_file() {
     rel=${f:23}
     dir=$(dirname ${f})
     echo " $f -> $rel" >> $COPY_REFERENCE_FILE_LOG
-	if [[ ! -e /var/jenkins_home/${rel} ]] 
+  if [[ ! -e /var/jenkins_home/${rel} ]] || \
+     [[ ${rel} == init.groovy.d/*.groovy ]]; #Always copy init scripts.
 	then
 		echo "copy $rel to JENKINS_HOME" >> $COPY_REFERENCE_FILE_LOG
 		mkdir -p /var/jenkins_home/${dir:23}
