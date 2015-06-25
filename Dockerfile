@@ -8,7 +8,8 @@ ENV JENKINS_UID 500
 # Jenkins is ran with user `jenkins`, uid = 500
 # If you bind mount a volume from host/vloume from a data container, 
 # ensure you use same uid
-RUN useradd -d "$JENKINS_HOME" -u ${JENKINS_UID} -m -s /bin/bash jenkins
+RUN groupadd -g ${JENKINS_UID} jenkins && \
+    useradd -d "$JENKINS_HOME" -u ${JENKINS_UID} -g jenkins -m -s /bin/bash jenkins
 
 # Jenkins home directoy is a volume, so configuration and build history 
 # can be persisted and survive image upgrades
@@ -18,7 +19,6 @@ VOLUME /var/jenkins_home
 # to set on a fresh new installation. Use it to bundle additional plugins 
 # or config file with your custom jenkins Docker image.
 RUN mkdir -p /usr/share/jenkins/ref/init.groovy.d
-
 
 COPY init.groovy /usr/share/jenkins/ref/init.groovy.d/tcp-slave-agent-port.groovy
 
