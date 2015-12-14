@@ -1,9 +1,10 @@
-FROM java:8u45-jdk
+FROM java:8-jdk
 
 RUN apt-get update && apt-get install -y wget git curl zip && rm -rf /var/lib/apt/lists/*
 
 ENV JENKINS_HOME /var/jenkins_home
 ENV JENKINS_UID 500
+ENV JENKINS_SLAVE_AGENT_PORT 50000
 
 # Jenkins is ran with user `jenkins`, uid = 500
 # If you bind mount a volume from host/vloume from a data container, 
@@ -11,7 +12,7 @@ ENV JENKINS_UID 500
 RUN groupadd -g ${JENKINS_UID} jenkins && \
     useradd -d "$JENKINS_HOME" -u ${JENKINS_UID} -g jenkins -m -s /bin/bash jenkins
 
-# Jenkins home directoy is a volume, so configuration and build history 
+# Jenkins home directory is a volume, so configuration and build history 
 # can be persisted and survive image upgrades
 VOLUME /var/jenkins_home
 
@@ -20,10 +21,17 @@ VOLUME /var/jenkins_home
 # or config file with your custom jenkins Docker image.
 RUN mkdir -p /usr/share/jenkins/ref/init.groovy.d
 
+ENV TINI_SHA 066ad710107dc7ee05d3aa6e4974f01dc98f3888
+
+# Use tini as subreaper in Docker container to adopt zombie processes 
+RUN curl -fL https://github.com/krallin/tini/releases/download/v0.5.0/tini-static -o /bin/tini && chmod +x /bin/tini \
+  && echo "$TINI_SHA /bin/tini" | sha1sum -c -
+
 COPY init.groovy /usr/share/jenkins/ref/init.groovy.d/tcp-slave-agent-port.groovy
 
-ENV JENKINS_VERSION 1.609.1
-ENV JENKINS_SHA 698284ad950bd663c783e99bc8045ca1c9f92159
+ENV JENKINS_VERSION 1.625.3
+ENV JENKINS_SHA 537d910f541c25a23499b222ccd37ca25e074a0c
+
 
 # could use ADD but this one does not check Last-Modified header 
 # see https://github.com/docker/docker/issues/8331
@@ -39,13 +47,12 @@ EXPOSE 8080
 # will be used by attached slave agents:
 EXPOSE 50000
 
-ENV COPY_REFERENCE_FILE_LOG /var/log/copy_reference_file.log
-RUN touch $COPY_REFERENCE_FILE_LOG && chown jenkins.jenkins $COPY_REFERENCE_FILE_LOG
+ENV COPY_REFERENCE_FILE_LOG $JENKINS_HOME/copy_reference_file.log
 
 USER jenkins
 
 COPY jenkins.sh /usr/local/bin/jenkins.sh
-ENTRYPOINT ["/usr/local/bin/jenkins.sh"]
+ENTRYPOINT ["/bin/tini", "--", "/usr/local/bin/jenkins.sh"]
 
-# from a derived Dockerfile, can use `RUN plugin.sh active.txt` to setup /usr/share/jenkins/ref/plugins from a support bundle
+# from a derived Dockerfile, can use `RUN plugins.sh active.txt` to setup /usr/share/jenkins/ref/plugins from a support bundle
 COPY plugins.sh /usr/local/bin/plugins.sh

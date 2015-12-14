@@ -15,16 +15,17 @@ copy_reference_file() {
   if [[ ! -e /var/jenkins_home/${rel} ]] || \
      [[ ${rel} == init.groovy.d/*.groovy ]]; #Always copy init scripts.
 	then
-		echo "copy $rel to JENKINS_HOME" >> $COPY_REFERENCE_FILE_LOG
-		mkdir -p /var/jenkins_home/${dir:23}
-		cp -r /usr/share/jenkins/ref/${rel} /var/jenkins_home/${rel};
+		echo "copy $rel to JENKINS_HOME" >> "$COPY_REFERENCE_FILE_LOG"
+		mkdir -p "/var/jenkins_home/${dir:23}"
+		cp -r "/usr/share/jenkins/ref/${rel}" "/var/jenkins_home/${rel}";
 		# pin plugins on initial copy
-		[[ ${rel} == plugins/*.jpi ]] && touch /var/jenkins_home/${rel}.pinned
+		[[ ${rel} == plugins/*.jpi ]] && touch "/var/jenkins_home/${rel}.pinned"
 	fi; 
 }
 export -f copy_reference_file
-echo "--- Copying files at $(date)" >> $COPY_REFERENCE_FILE_LOG
-find /usr/share/jenkins/ref/ -type f -exec bash -c 'copy_reference_file {}' \;
+touch "${COPY_REFERENCE_FILE_LOG}" || echo "Can not write to ${COPY_REFERENCE_FILE_LOG}. Wrong volume permissions?"
+echo "--- Copying files at $(date)" >> "$COPY_REFERENCE_FILE_LOG"
+find /usr/share/jenkins/ref/ -type f -exec bash -c "copy_reference_file '{}'" \;
 
 # if `docker run` first argument start with `--` the user is passing jenkins launcher arguments
 if [[ $# -lt 1 ]] || [[ "$1" == "--"* ]]; then
